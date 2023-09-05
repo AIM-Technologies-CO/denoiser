@@ -13,6 +13,7 @@ import os
 import sys
 
 import torch
+import time
 import torchaudio
 
 from .audio import Audioset, find_audio_files
@@ -44,6 +45,7 @@ add_flags(parser)
 parser.add_argument("--out_dir", type=str, default="enhanced",
                     help="directory putting enhanced wav files")
 parser.add_argument("--batch_size", default=1, type=int, help="batch size")
+parser.add_argument("-f", "--num_frames", type=int, default=1)
 parser.add_argument('-v', '--verbose', action='store_const', const=logging.DEBUG,
                     default=logging.INFO, help="more loggging")
 
@@ -55,9 +57,10 @@ group.add_argument("--noisy_json", type=str, default=None,
 
 
 def get_estimate(model, noisy, args):
+    start = time.time()
     torch.set_num_threads(1)
     if args.streaming:
-        streamer = DemucsStreamer(model, dry=args.dry)
+        streamer = DemucsStreamer(model, dry=args.dry, num_frames=args.num_frames)
         with torch.no_grad():
             estimate = torch.cat([
                 streamer.feed(noisy[0]),
@@ -66,6 +69,7 @@ def get_estimate(model, noisy, args):
         with torch.no_grad():
             estimate = model(noisy)
             estimate = (1 - args.dry) * estimate + args.dry * noisy
+    print("[INFO] Total enhancement time=",round((time.time() - start),3),"s")
     return estimate
 
 
