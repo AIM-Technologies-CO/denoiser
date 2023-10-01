@@ -22,7 +22,7 @@ Info = namedtuple("Info", ["length", "sample_rate", "channels"])
 
 def get_info(path):
     info = torchaudio.info(path)
-    if hasattr(info, 'num_frames'):
+    if hasattr(info, "num_frames"):
         # new version of torchaudio
         return Info(info.num_frames, info.sample_rate, info.num_channels)
     else:
@@ -42,15 +42,25 @@ def find_audio_files(path, exts=[".wav"], progress=True):
         info = get_info(file)
         meta.append((file, info.length))
         if progress:
-            print(format((1 + idx) / len(audio_files), " 3.1%"), end='\r', file=sys.stderr)
+            print(
+                format((1 + idx) / len(audio_files), " 3.1%"), end="\r", file=sys.stderr
+            )
     meta.sort()
     return meta
 
 
 class Audioset:
-    def __init__(self, files=None, length=None, stride=None,
-                 pad=True, with_path=False, sample_rate=None,
-                 channels=None, convert=False):
+    def __init__(
+        self,
+        files=None,
+        length=None,
+        stride=None,
+        pad=True,
+        with_path=False,
+        sample_rate=None,
+        channels=None,
+        convert=False,
+    ):
         """
         files should be a list [(file, length)]
         """
@@ -86,23 +96,29 @@ class Audioset:
             if self.length is not None:
                 offset = self.stride * index
                 num_frames = self.length
-            if torchaudio.get_audio_backend() in ['soundfile', 'sox_io']:
-                out, sr = torchaudio.load(str(file),
-                                          frame_offset=offset,
-                                          num_frames=num_frames or -1)
+            if torchaudio.get_audio_backend() in ["soundfile", "sox_io"]:
+                out, sr = torchaudio.load(
+                    str(file), frame_offset=offset, num_frames=num_frames or -1
+                )
             else:
-                out, sr = torchaudio.load(str(file), offset=offset, num_frames=num_frames)
+                out, sr = torchaudio.load(
+                    str(file), offset=offset, num_frames=num_frames
+                )
             target_sr = self.sample_rate or sr
             target_channels = self.channels or out.shape[0]
             if self.convert:
                 out = convert_audio(out, sr, target_sr, target_channels)
             else:
                 if sr != target_sr:
-                    raise RuntimeError(f"Expected {file} to have sample rate of "
-                                       f"{target_sr}, but got {sr}")
+                    raise RuntimeError(
+                        f"Expected {file} to have sample rate of "
+                        f"{target_sr}, but got {sr}"
+                    )
                 if out.shape[0] != target_channels:
-                    raise RuntimeError(f"Expected {file} to have sample rate of "
-                                       f"{target_channels}, but got {sr}")
+                    raise RuntimeError(
+                        f"Expected {file} to have sample rate of "
+                        f"{target_channels}, but got {sr}"
+                    )
             if num_frames:
                 out = F.pad(out, (0, num_frames - out.shape[-1]))
             if self.with_path:
